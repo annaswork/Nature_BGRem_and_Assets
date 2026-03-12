@@ -1,0 +1,5 @@
+.vscode/
+venv_nature_server/
+
+# ignore your dot env file
+.env
