@@ -19,7 +19,7 @@ ANALYTICS = "analytics"
 #Directories
 STATIC_DIR = "static"
 ASSETS_ORIGINAL_DIR = f"{STATIC_DIR}/originals"
-ASSETS_ORIGINAL_DIR = f"{STATIC_DIR}/thumbnails"
+ASSETS_THUMNAIL_DIR = f"{STATIC_DIR}/thumbnails"
 BG_REMOVED_DIR = f"{STATIC_DIR}/no_bg"
 
 #File Prefix
