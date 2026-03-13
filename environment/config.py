@@ -14,17 +14,16 @@ MONGO_HOST = "mongodb://172.16.0.94:27017/"
 DATABASE = "natureassetsdb"
 ASSETS = "assets"
 CATEGORIES = "categories"
-ANALYTICS = "analytics"
 
 #Directories
 STATIC_DIR = "static"
 ASSETS_ORIGINAL_DIR = f"{STATIC_DIR}/originals"
-ASSETS_THUMNAIL_DIR = f"{STATIC_DIR}/thumbnails"
+ASSETS_THUMBNAIL_DIR = f"{STATIC_DIR}/thumbnails"
 BG_REMOVED_DIR = f"{STATIC_DIR}/no_bg"
 
 #File Prefix
-FILE_PREFIX = f"http://{IP}:{PORT}/{STATIC_DIR}"
+FILE_PREFIX = f"http://{IP}:{PORT}"
 
 #Default Files
-DEFAULT_IMAGE = f"{FILE_PREFIX}/default_image.jpg"
-DEFAULT_THUMBNAIL = f"{FILE_PREFIX}/default_thumbnail.jpg"
+DEFAULT_IMAGE = f"{FILE_PREFIX}/{STATIC_DIR}/default_image.jpg"
+DEFAULT_THUMBNAIL = f"{FILE_PREFIX}/{STATIC_DIR}/default_thumbnail.jpg"
