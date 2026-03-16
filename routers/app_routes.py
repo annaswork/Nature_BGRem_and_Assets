@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 
 from controller import app_controller
 
+from inits.server_init import *
+
 router = APIRouter(prefix="/nature", tags=["natureAssets"])
 
 #=======================================================================================
@@ -182,3 +184,22 @@ async def incrementViews(
 
 #=======================================================================================
 #=======================================================================================
+
+@router.post("/remove_bg", response_model=dict)
+async def remove_bg(
+    request: Request,
+    image:  UploadFile = File(...)
+):
+
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(
+        thread_pool,
+        app_controller.remove_background,
+        image
+    )
+    return result
+
+@router.delete("/clear_rembg_folder")
+async def clear_rembg_folder():
+    result = await controller.clear_rembg_folder(config.BG_REMOVED_DIR)
+    return result

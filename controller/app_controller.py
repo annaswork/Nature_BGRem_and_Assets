@@ -1,9 +1,13 @@
 import os
+import io
 import shutil
 from bson import ObjectId
 from datetime import datetime
 
-from utils.preprocess_image import create_thumbnail
+# Remove background library
+from rembg import remove
+
+from utils.preprocess_image import create_thumbnail, generate_unique_name
 
 #loading database functions
 from database.configuration import get_assets_db
@@ -525,3 +529,45 @@ async def increaseView(
 
 #=======================================================================================
 #=======================================================================================
+
+async def remove_background(
+    image
+):
+    try:
+        contents = await image.read()
+        img = Image.open(io.BytesIO(contents))
+
+        unique_filename = generate_unique_name(img.filename, 'webp')
+
+        #removing the background
+        bg_removed = remove(img)
+        file_path = f"{config.BG_REMOVED_DIR}/{unique_filename}"
+
+        #saving file in folder to read through URL
+        bg_removed.save(file_path, 'WEBP')
+
+        return {
+            "message": MESSAGES.BG_REM_SUCCESS,
+            "image_path": f"{config.FILE_PREFIX}/{file_path}"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error while removing background: {e}"
+        )
+
+#=================================================
+
+#Function to clear a folder
+def clear_Folder(folderName):
+    try:
+        for filename in os.listdir(folderName):
+            file_path = os.path.join(folderName, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        return {"message": "Folder Cleared Successfully" }
+    except Exception as e:
+        raise HTTPException(
+            status_code= status.HTTP_400_BAD_REQUEST,
+            detail=f"Error Clearing Folder: {str(e)}"
+        )

@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 #Thread pool for creating threads
 from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
 #importing python dependencies
 import pillow_heif
