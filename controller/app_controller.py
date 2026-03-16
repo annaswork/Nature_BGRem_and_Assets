@@ -2,7 +2,7 @@ import os
 import io
 import shutil
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 # Remove background library
 from rembg import remove
@@ -33,6 +33,7 @@ async def add_categories(
         collection = db[f"{config.CATEGORIES}"]
 
         category_folder = f"{config.ASSETS_ORIGINAL_DIR}"
+        category_overlay_folder = f"{config.ASSETS_OVERLAY_DIR}"
         cat_thumbnail_folder = f"{config.ASSETS_THUMBNAIL_DIR}"
         
         if has_images:
@@ -62,6 +63,8 @@ async def add_categories(
 
                 #create folder by category name for assets
                 create_req_folder(f"{category_folder}/{category.replace(" ","_").lower()}")
+                #create folder by category name for overlay
+                create_req_folder(f"{category_overlay_folder}/{category.replace(" ","_").lower()}")
                 #create folder by category name for assets thumbnails
                 create_req_folder(f"{cat_thumbnail_folder}/{category.replace(" ","_").lower()}")
                 
@@ -95,6 +98,8 @@ async def add_categories(
 
                 #create folder for assets
                 create_req_folder(f"{category_folder}/{category.replace(" ","_").lower()}")
+                #create folder by category name for overlay
+                create_req_folder(f"{category_overlay_folder}/{category.replace(" ","_").lower()}")
                 #create folder for assets thumbnails
                 create_req_folder(f"{cat_thumbnail_folder}/{category.replace(" ","_").lower()}")
 
@@ -262,11 +267,14 @@ async def remove_category(
 
         # Delete category folder and all its contents from Original/Asset and Thumbnail/Asset
         original_category_path = f"{config.ASSETS_ORIGINAL_DIR}/{category_Folder}"
+        overlay_category_path = f"{config.ASSETS_OVERLAY_DIR}/{category_Folder}"
         thumbnail_category_path = f"{config.ASSETS_THUMBNAIL_DIR}/{category_Folder}"
         
 
         if os.path.exists(original_category_path):
             shutil.rmtree(original_category_path)
+        if os.path.exists(overlay_category_path):
+            shutil.rmtree(overlay_category_path)
         if os.path.exists(thumbnail_category_path):
             shutil.rmtree(thumbnail_category_path)
         
@@ -296,63 +304,82 @@ async def remove_category(
 async def add_assets(
     categoryId,
     categoryName,
-    name,
     images,
+    overlays,
     thumbnails
 ):
     try:
+    
         # Names modified for folder reading
         categoryName_modified = categoryName.replace(" ","_").lower()
 
         # setting up collection
         db = get_assets_db()
         collection = db[f"{config.ASSETS}"]
-        # Check if asset already existing
-        condition = {"category_id": categoryId, "name": name}
-        existing = await collection.find_one(condition)
-        if existing:
-            raise ValueError("Asset already exists")
-
+        
+    
         #folder to store image
-        image_folderpath = f"{config.ASSETS_ORIGINAL_DIR}{categoryName_modified}"
+        image_folderpath = f"{config.ASSETS_ORIGINAL_DIR}/{categoryName_modified}"
+        #folder to store overlay
+        overlay_folderpath = f"{config.ASSETS_OVERLAY_DIR}/{categoryName_modified}"
         #folder to store thumbnail
         thumbnail_folderpath = f"{config.ASSETS_THUMBNAIL_DIR}/{categoryName_modified}"
 
         image_url = None
+        overlay_url = None
         thumbnail_url = None
         check_thumbnail = False
+        check_overlay = False
+    
         # Saving all the images in folder
         await save_files_by_folder(image_folderpath, images)
+    
+        if overlays:     
+            await save_files_by_folder(overlay_folderpath, overlays)
+            check_overlay= True
         
-        # logic for saving thumbnail
-        if thumbnails:
-            # Save all thumbnails in a folder
-            await save_files_by_folder(thumbnail_folderpath, thumbnails)
+        if thumbnails:   
+            await save_files_by_folder(thumbnail_folderpath, thumbnails)        
             check_thumbnail = True
-        
+                
         count = 0
-        sequenceValue = String(count)
+        sequenceValue = str(count)
+    
         for image in images:
             imageName = image.filename
-            imagepath = f"{config.ASSETS_ORIGINAL_DIR}/{imageName}"
-            thumbnailpath = f"{config.ASSETS_ORIGINAL_DIR}/{imageName}"
-            if check_thumbnail == False:
+        
+            # Check if asset already existing
+            condition = {"category_id": categoryId, "name": imageName}
+            existing = await collection.find_one(condition)
+        
+            if existing:
+                raise ValueError("Asset already exists")
+        
+            imagepath = f"{config.ASSETS_ORIGINAL_DIR}/{categoryName_modified}/{imageName}"
+            overlaypath = f"{config.ASSETS_OVERLAY_DIR}/{categoryName_modified}/{imageName}"
+            thumbnailpath = f"{config.ASSETS_THUMBNAIL_DIR}/{categoryName_modified}/{imageName}"
+        
+            if not check_thumbnail:            
                 create_thumbnail(imagepath, thumbnailpath)
-            
+                                
             image_url = f"{config.FILE_PREFIX}/{imagepath}"
+            if check_overlay:
+                overlay_url = f"{config.FILE_PREFIX}/{overlaypath}"
             thumbnail_url = f"{config.FILE_PREFIX}/{thumbnailpath}"
 
         
             asset_model = Asset(
                 category_id= categoryId,
-                name= name,
+                name= imageName.replace('.png',''),
                 image= image_url,
+                overlay= overlay_url,
                 thumbnail= thumbnail_url,
                 sequence = ('0' * (3 - len(sequenceValue)))+ sequenceValue
             )
 
-            await collection.insert_one(asset_model.model_dump())
             count += 1
+            sequenceValue = str(count)
+            await collection.insert_one(asset_model.model_dump())
         return {
             "message": f"{count} assets added in category {categoryName}"
         }
@@ -368,7 +395,8 @@ async def add_assets(
 
 async def get_assets(
     categoryId,
-    isAdmin
+    isAdmin,
+    isSuit
 ):
     try:
         db = get_assets_db()
@@ -380,8 +408,10 @@ async def get_assets(
         
         if categoryId:
             condition["category_id"] = categoryId
-        if not isAdmin:
+        if not isAdmin or isAdmin == "False":
             condition["isEnable"] = True
+        if isSuit:
+            condition["isEnable"] = False
 
         assets = await collection.find(condition, projection).to_list(length=None)
 
@@ -428,10 +458,10 @@ async def remove_asset(
 
 async def update_asset(
     categoryName,
-    assetName,
     assetId,
     assetNewName,
     image,
+    overlay,
     thumbnail,
     isEnable, 
     isPremium,
@@ -444,38 +474,38 @@ async def update_asset(
         db = get_assets_db()
         collection = db[f"{config.ASSETS}"]
 
-        name = assetName
         assetPath = f"{config.ASSETS_ORIGINAL_DIR}/{categoryName_modified}"
+        overlayPath = f"{config.ASSETS_OVERLAY_DIR}/{categoryName_modified}"
         thumbnailPath = f"{config.ASSETS_THUMBNAIL_DIR}/{categoryName_modified}"
 
-        obj={}
+        obj={
+            "updated_at": datetime.now()
+        }
         #Setting up New Name and rename the folders
         if assetNewName:
            obj["name"] = assetNewName
 
         image_url = None
+        overlay_url = None
         thumbnail_url = None
 
         # logic for creating thumbnail
-        if thumbnail:
+        if thumbnail and thumbnail.filename:
             await save_single_file_by_folder(thumbnailPath, thumbnail)
-            thumbnail_url = f"{config.FILE_PREFIX}/{thumbnailPath}/{thumbnail.filename}"
+            obj["thumbnail"] = f"{config.FILE_PREFIX}/{thumbnailPath}/{thumbnail.filename}"
 
 
-        if image:
+        if image and image.filename:
             filename= image.filename
             await save_single_file_by_folder(assetPath, image)
-            image_url = f"{config.FILE_PREFIX}/{assetPath}/{filename}"
+            obj["image"] = f"{config.FILE_PREFIX}/{assetPath}/{filename}"
+        
+        if overlay and overlay.filename:
+            filename= overlay.filename
+            await save_single_file_by_folder(assetPath, overlay)
+            obj["overlay"] = f"{config.FILE_PREFIX}/{overlayPath}/{filename}"
 
-            # create a thumbnail
-            if thumbnail_url is None:
-                await create_thumbnail(f"{assetPath}/{filename}", f"{thumbnailPath}/{filename}")
-                thumbnail_url = f"{config.FILE_PREFIX}/{thumbnailPath}/{filename}"
-
-        if image_url:
-            obj["image"] = config.FILE_URL_PREFIX +'/'+ image_url
-        if thumbnail_url:
-            obj["thumbnail"] = config.FILE_URL_PREFIX +'/'+  thumbnail_url
+        
         if isEnable:
             obj["isEnable"] = str(isEnable).lower() == "true"
         if isPremium:
@@ -493,7 +523,7 @@ async def update_asset(
         )
 
         return {
-            "Message": f"'{assetName}' - asset updated"
+            "Message": f"'{assetId}' - asset updated"
         }
 
     except Exception as e:

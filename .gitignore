@@ -1,5 +1,8 @@
 .vscode/
 venv_nature_server/
+__pycache__/
 
 # ignore your dot env file
 .env
+
+static/*

@@ -2,11 +2,14 @@ import os
 from environment import config
 from fastapi import HTTPException
 
+def create_req_folder(foldername):
+    os.makedirs(foldername, exist_ok=True)
+
 async def save_files_by_folder(
     folder_path,
     files
 ):
-    try:
+    try:        
         for file in files:
             file_name = file.filename
             file_path = os.path.join(folder_path, file_name)
@@ -26,7 +29,6 @@ async def save_single_file_by_folder(
     file
 ):
     try:
-        
         file_name = file.filename
         file_path = os.path.join(folder_path, file_name)
         with open(file_path, "wb") as f:

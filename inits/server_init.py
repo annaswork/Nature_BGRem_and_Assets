@@ -35,7 +35,8 @@ app.mount(
 #Create and mount static folder and other subfolders
 os.makedirs(config.STATIC_DIR, exist_ok=True)
 os.makedirs(config.ASSETS_ORIGINAL_DIR, exist_ok=True)
-os.makedirs(config.ASSETS_THUMNAIL_DIR, exist_ok=True)
+os.makedirs(config.ASSETS_OVERLAY_DIR, exist_ok=True)
+os.makedirs(config.ASSETS_THUMBNAIL_DIR, exist_ok=True)
 os.makedirs(config.BG_REMOVED_DIR, exist_ok=True)
 app.mount(
     f"/{config.STATIC_DIR}",
