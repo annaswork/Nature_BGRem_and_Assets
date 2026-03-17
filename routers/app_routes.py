@@ -2,6 +2,9 @@ from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
+from PIL import Image
+import io
+
 from controller import app_controller
 
 from inits.server_init import *
@@ -191,16 +194,22 @@ async def remove_bg(
     request: Request,
     image:  UploadFile = File(...)
 ):
+    try: 
+        contents = await image.read()
+        img = Image.open(io.BytesIO(contents))
 
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(
-        thread_pool,
-        app_controller.remove_background,
-        image
-    )
-    return result
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            thread_pool,
+            app_controller.remove_background,
+            img
+        )
+        return result
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/clear_rembg_folder")
 async def clear_rembg_folder():
-    result = await app_controller.clear_rembg_folder(config.BG_REMOVED_DIR)
+    result = app_controller.clear_Folder(config.BG_REMOVED_DIR)
     return result

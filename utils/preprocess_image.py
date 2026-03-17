@@ -26,7 +26,7 @@ def generate_unique_name(filename):
     unique_id = str(uuid.uuid4())
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    output_file_name = f"{filename.split('.')[0]}_{unique_id}_{timestamp}.{IMAGE_FORMAT}".replace(" ","_")
+    output_file_name = f"{filename.split('.')[0]}_{unique_id}_{timestamp}.webp".replace(" ","_")
 
     return output_file_name
 

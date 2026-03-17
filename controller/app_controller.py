@@ -1,5 +1,4 @@
 import os
-import io
 import shutil
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
@@ -560,24 +559,22 @@ async def increaseView(
 #=======================================================================================
 #=======================================================================================
 
-async def remove_background(
+def remove_background(
     image
 ):
     try:
-        contents = await image.read()
-        img = Image.open(io.BytesIO(contents))
 
-        unique_filename = generate_unique_name(img.filename, 'webp')
+        unique_filename = generate_unique_name(image.filename)
 
         #removing the background
-        bg_removed = remove(img)
+        bg_removed = remove(image)
         file_path = f"{config.BG_REMOVED_DIR}/{unique_filename}"
 
         #saving file in folder to read through URL
         bg_removed.save(file_path, 'WEBP')
 
         return {
-            "message": MESSAGES.BG_REM_SUCCESS,
+            "message": "Background Removed Successfully",
             "image_path": f"{config.FILE_PREFIX}/{file_path}"
         }
     except Exception as e:
