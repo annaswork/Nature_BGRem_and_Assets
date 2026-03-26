@@ -184,18 +184,6 @@ async def update_category(
         if categoryName is not None:
             category = categoryName
             Category_Name = categoryName
-
-            # New Folder paths
-            new_AssetsFolder = f"{category_folder}/{category.replace(" ","_").lower()}"
-            new_Assets_thumbnails = f"{cat_thumbnail_folder}/{category.replace(" ","_").lower()}"
-
-            # Old Folder Paths
-            old_AssetsFolder = f"{category_folder}/{old_categoryName}"
-            old_Assets_thumbnails = f"{cat_thumbnail_folder}/{old_categoryName}"
-
-            # Renaming folders
-            rename_folder(old_AssetsFolder, new_AssetsFolder)
-            rename_folder(old_Assets_thumbnails, new_Assets_thumbnails)
         
         image_url= None
         thumbnail_url= None
